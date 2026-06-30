@@ -4,19 +4,15 @@ import numpy as np
 N_CARS = 23
 RING_LENGTH = 230
 IDEAL_V = 11.17
-ALPHA = 3.47 #sensitivity to FtL term
-BETA = 0.0285 #sensitivity to optimal velocity term
-
+ALPHA = 20.0 #sensitivity to FtL term
+BETA = 0.5 #sensitivity to optimal velocity term
+CAR_LENGTH = 3.6
 
 def headway(x_self, x_leader):
-    return (x_leader - x_self + RING_LENGTH) % RING_LENGTH
+    return (x_leader - x_self - CAR_LENGTH + RING_LENGTH) % RING_LENGTH
 
 def optimal_velocity(car, h):
-    iv=IDEAL_V
-    # if car==0:
-    #     #use ideal v = 30 m/s for the first car to create a perturbation
-    #     iv = 20.0
-    return max(0, (iv - 1)/2 + (iv + 1)/2 * np.tanh(0.3 * h - 1.5))
+    return IDEAL_V * (np.tanh(h-3.5)+np.tanh(7.1)) / (1 + np.tanh(7.1))
 
 def acceleration(car, x, v, x_leader, v_leader):
     h = headway(x, x_leader)
@@ -25,12 +21,12 @@ def acceleration(car, x, v, x_leader, v_leader):
     return FtL_term + OV_term
 
 initial_positions = np.linspace(RING_LENGTH, 0, N_CARS, endpoint=False) #evenly spaced around the ring, with the first car at the end of the ring
-initial_velocities = np.full(N_CARS, IDEAL_V) #every car starts at ideal velocity
+initial_velocities = np.full(N_CARS, 10.0) #every car starts at ideal velocity
 initial_state = np.empty(2 * N_CARS)
 for i in range(N_CARS):
     initial_state[2*i] = initial_positions[i]
     initial_state[2*i + 1] = initial_velocities[i]
-initial_state[1] -= 6 #add a small perturbation to the velocity of the first car to break symmetry
+initial_state[1] -= 0.0 #add a small perturbation to the velocity of the first car to break symmetry
 
 
 def derivatives(t_notused, state):
@@ -45,7 +41,7 @@ def derivatives(t_notused, state):
 
 from scipy.integrate import solve_ivp
 t_span = (0, 500)
-solution = solve_ivp(derivatives, t_span, initial_state, method="Radau", t_eval=np.linspace(0, 500, 3000))#, max_step=0.1)
+solution = solve_ivp(derivatives, t_span, initial_state, method="Radau", t_eval=np.linspace(0, 500, 3000), atol=1e-9, rtol=1e-9)
 
 import matplotlib.pyplot as plt
 for i in range(N_CARS):
