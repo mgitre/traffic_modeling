@@ -3,16 +3,18 @@ import numpy as np
 #PARAMETERS
 N_CARS = 23
 RING_LENGTH = 230
-IDEAL_V = 11.17
+V_MAX = 11.17
 ALPHA = 20.0 #sensitivity to FtL term
 BETA = 0.5 #sensitivity to optimal velocity term
 CAR_LENGTH = 3.6
+d_0=2.5
 
 def headway(x_self, x_leader):
     return (x_leader - x_self - CAR_LENGTH + RING_LENGTH) % RING_LENGTH
 
 def optimal_velocity(car, h):
-    return IDEAL_V * (np.tanh(h-3.5)+np.tanh(7.1)) / (1 + np.tanh(7.1))
+    return V_MAX * (np.tanh((h/d_0)-2)+np.tanh(2))/(1+np.tanh(2))
+
 
 def acceleration(car, x, v, x_leader, v_leader):
     h = headway(x, x_leader)
@@ -21,7 +23,7 @@ def acceleration(car, x, v, x_leader, v_leader):
     return FtL_term + OV_term
 
 initial_positions = np.linspace(RING_LENGTH, 0, N_CARS, endpoint=False) #evenly spaced around the ring, with the first car at the end of the ring
-initial_velocities = np.full(N_CARS, 10.0) #every car starts at ideal velocity
+initial_velocities = np.full(N_CARS, 8.371723575430472) #every car starts at ideal velocity
 initial_state = np.empty(2 * N_CARS)
 for i in range(N_CARS):
     initial_state[2*i] = initial_positions[i]
@@ -63,7 +65,7 @@ plt.show()
 #headways over time
 for i in range(N_CARS):
     leader = (i - 1) % N_CARS
-    headways = (solution.y[2*leader] - solution.y[2*i] + RING_LENGTH) % RING_LENGTH
+    headways = (solution.y[2*leader] - solution.y[2*i] -CAR_LENGTH + RING_LENGTH) % RING_LENGTH
     plt.plot(solution.t, headways, label=f'Car {i}')
 plt.xlabel('Time (s)')
 plt.ylabel('Headway (m)')
